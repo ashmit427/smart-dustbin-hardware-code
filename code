@@ -1,0 +1,72 @@
+#include <Servo.h>
+
+#define S0 7
+#define S1 6
+#define S2 5
+#define S3 4
+#define sensorOut 8
+
+Servo sorterServo;
+
+void setup() {
+    Serial.begin(9600);
+    
+    // Define pin modes for TCS3200
+    pinMode(S0, OUTPUT);
+    pinMode(S1, OUTPUT);
+    pinMode(S2, OUTPUT);
+    pinMode(S3, OUTPUT);
+    pinMode(sensorOut, INPUT);
+    
+    // Set frequency scaling to 20%
+    digitalWrite(S0, HIGH);
+    digitalWrite(S1, LOW);
+    
+    // Attach the servo to pin 9
+    sorterServo.attach(9);
+    sorterServo.write(90); // Start position
+}
+
+int readColor(char color) {
+    if (color == 'R') {
+        digitalWrite(S2, LOW);
+        digitalWrite(S3, LOW);
+    } else if (color == 'G') {
+        digitalWrite(S2, HIGH);
+        digitalWrite(S3, HIGH);
+    } else if (color == 'B') {
+        digitalWrite(S2, LOW);
+        digitalWrite(S3, HIGH);
+    }
+    delay(100);
+    return pulseIn(sensorOut, LOW);
+}
+
+void loop() {
+    int red = readColor('R');
+    int green = readColor('G');
+    int blue = readColor('B');
+
+    Serial.print("R: "); Serial.print(red);
+    Serial.print(" G: "); Serial.print(green);
+    Serial.print(" B: "); Serial.println(blue);
+
+    if (red > green && red > blue) {
+        Serial.println("Detected: Plastic (Red) → Moving to Bin 1");
+        sorterServo.write(45); // Move to Bin 1
+    } 
+    else if (green > red && green > blue) {
+        Serial.println("Detected: Organic (Green) → Moving to Bin 2");
+        sorterServo.write(90); // Move to Bin 2
+    } 
+    else if (blue > red && blue > green) {
+        Serial.println("Detected: Metal/Paper (Blue) → Moving to Bin 3");
+        sorterServo.write(135); // Move to Bin 3
+    } 
+    else {
+        Serial.println("Unknown Object → Default Position");
+        sorterServo.write(90);
+    }
+
+    delay(2000); // Wait before next detection
+}
